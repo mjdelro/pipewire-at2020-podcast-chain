@@ -24,7 +24,7 @@ use the same graph, but may need to change the LADSPA library paths in
 - PipeWire utilities (`pw-config`, `pw-cli`)
 - RNNoise LADSPA plugin from `noise-suppression-for-voice`
 - LSP LADSPA plugins
-- LSP Plugins 1.2.35 for the de-esser
+- LSP Plugins 1.2.35 for the gate, compressor, de-esser, and limiter
 
 ## Installation on Fedora
 
@@ -82,10 +82,11 @@ Confirm that RNNoise is available:
 test -f /usr/lib64/ladspa/librnnoise_ladspa.so
 ```
 
-### 2. Install the LSP 1.2.35 de-esser
+### 2. Install the LSP 1.2.35 processing stack
 
-The Fedora LSP package may not yet contain `deesser_mono`. Install the official
-LSP 1.2.35 LADSPA binary alongside the packaged library:
+The Fedora LSP package may not yet contain `deesser_mono`. The configuration
+pins every LSP processor to the same 1.2.35 build so plugin behavior stays
+consistent. Install the official LADSPA binary alongside the packaged library:
 
 ```bash
 work_dir=$(mktemp -d)
@@ -98,11 +99,13 @@ sudo install -Dm755 \
   /usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so
 ```
 
-Confirm that the installed library exposes the mono de-esser:
+Confirm that the installed library exposes the complete mono processing stack:
 
 ```bash
-analyseplugin /usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so \
-  | grep -F 'deesser_mono'
+for plugin in gate_mono compressor_mono deesser_mono limiter_mono; do
+  analyseplugin /usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so \
+    | grep -F "plugins/ladspa/$plugin"
+done
 ```
 
 ### 3. Install the PipeWire configuration

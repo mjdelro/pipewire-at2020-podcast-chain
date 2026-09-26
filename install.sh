@@ -80,8 +80,11 @@ readonly LSP_SOURCE="${temp_dir}/lsp-plugins-${LSP_VERSION}-Linux-x86_64/LADSPA/
 sudo install -Dm755 -- "${LSP_SOURCE}" "${LSP_TARGET}"
 
 command -v analyseplugin >/dev/null || fail "analyseplugin is unavailable after installing LADSPA packages."
-analyseplugin "${LSP_TARGET}" | grep -F 'deesser_mono' >/dev/null || \
-    fail "The installed LSP library does not expose deesser_mono."
+plugin_inventory="$(analyseplugin "${LSP_TARGET}")"
+for required_plugin in gate_mono compressor_mono deesser_mono limiter_mono; do
+    grep -F "plugins/ladspa/${required_plugin}" <<<"${plugin_inventory}" >/dev/null || \
+        fail "The installed LSP library does not expose ${required_plugin}."
+done
 
 info "Installing the PipeWire filter-chain configuration"
 mkdir -p -- "${CONFIG_DIR}"
