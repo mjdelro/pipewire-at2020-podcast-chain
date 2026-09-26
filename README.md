@@ -28,6 +28,33 @@ use the same graph, but may need to change the LADSPA library paths in
 
 ## Installation on Fedora
 
+### Automated installation
+
+Download the latest release bundle from the
+[Releases page](https://github.com/mjdelro/pipewire-at2020-podcast-chain/releases),
+extract it, and run:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+The installer supports Fedora x86_64. It installs the required packages,
+verifies the downloaded LSP archive against its SHA-256 release digest, backs
+up an existing configuration, validates the merged PipeWire graph, activates
+the virtual source, and automatically restores the previous configuration if
+validation or activation fails.
+
+To install from a Git checkout instead:
+
+```bash
+git clone https://github.com/mjdelro/pipewire-at2020-podcast-chain.git
+cd pipewire-at2020-podcast-chain
+./install.sh
+```
+
+The remaining sections describe the same process manually.
+
 ### 1. Install PipeWire tools and packaged plugins
 
 ```bash
