@@ -6,7 +6,7 @@ Audio-Technica AT2020 and a deep, controlled podcast sound.
 The virtual source is named **AT2020 Processed** and runs at 48 kHz. The chain
 contains:
 
-1. RNNoise noise suppression without hard VAD muting
+1. PipeWire WebRTC noise suppression
 2. Gentle downward expansion
 3. 65 Hz high-pass filtering
 4. Vocal EQ for warmth, mud control, presence, and air
@@ -22,7 +22,7 @@ use the same graph, but may need to change the LADSPA library paths in
 
 - PipeWire and WirePlumber
 - PipeWire utilities (`pw-config`, `pw-cli`)
-- RNNoise LADSPA plugin from `noise-suppression-for-voice`
+- PipeWire's bundled WebRTC audio processor
 - LSP LADSPA plugins
 - LSP Plugins 1.2.35 for the gate, compressor, de-esser, and limiter
 
@@ -69,17 +69,10 @@ sudo dnf install \
   git
 ```
 
-Enable the COPR containing the RNNoise LADSPA plugin, then install it:
+Confirm that PipeWire's WebRTC processor is available:
 
 ```bash
-sudo dnf copr enable lkiesow/noise-suppression-for-voice
-sudo dnf install ladspa-realtime-noise-suppression-plugin
-```
-
-Confirm that RNNoise is available:
-
-```bash
-test -f /usr/lib64/ladspa/librnnoise_ladspa.so
+test -f /usr/lib64/spa-0.2/aec/libspa-aec-webrtc.so
 ```
 
 ### 2. Install the LSP 1.2.35 processing stack
@@ -137,11 +130,11 @@ Validate the merged PipeWire module configuration before restarting audio:
 pw-config -n pipewire.conf merge context.modules >/dev/null
 ```
 
-Restart PipeWire and confirm that both services return:
+Restart PipeWire and WirePlumber, then confirm that all services return:
 
 ```bash
-systemctl --user restart pipewire pipewire-pulse
-systemctl --user is-active pipewire pipewire-pulse
+systemctl --user restart pipewire wireplumber pipewire-pulse
+systemctl --user is-active pipewire wireplumber pipewire-pulse
 ```
 
 Confirm that the virtual microphone exists:
@@ -159,8 +152,8 @@ capture source in the system audio routing.
 - Speak about 10-15 cm (4-6 in) from the microphone through a pop filter.
 - Aim slightly off-axis to reduce plosives and sibilance.
 - Set the hardware input so normal speech is healthy but never clips.
-- The chain intentionally leaves RNNoise VAD at 0% to prevent syllables from
-  being cut into digital silence.
+- WebRTC automatic gain control and high-pass filtering are disabled because
+  those duties are handled by the downstream mastering chain.
 - The limiter ceiling is -1.5 dB; frequent contact with that ceiling means the
   physical microphone gain is probably too high.
 
@@ -179,7 +172,7 @@ After any edit, validate and reload:
 
 ```bash
 pw-config -n pipewire.conf merge context.modules >/dev/null && \
-  systemctl --user restart pipewire pipewire-pulse
+  systemctl --user restart pipewire wireplumber pipewire-pulse
 ```
 
 Check for graph or plugin errors:
@@ -194,7 +187,7 @@ Remove only this override, then restart PipeWire:
 
 ```bash
 rm ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf
-systemctl --user restart pipewire pipewire-pulse
+systemctl --user restart pipewire wireplumber pipewire-pulse
 ```
 
 If a backup was created during installation, restore it instead:
@@ -202,7 +195,7 @@ If a backup was created during installation, restore it instead:
 ```bash
 mv ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf.backup \
   ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf
-systemctl --user restart pipewire pipewire-pulse
+systemctl --user restart pipewire wireplumber pipewire-pulse
 ```
 
 ## Notes
@@ -211,3 +204,8 @@ This is a real-time voice chain, not a replacement for final loudness
 normalization during podcast mastering. Recording applications that duplicate a
 mono source into stereo can also report approximately 3 LU more loudness than a
 true mono export.
+
+Versions before 1.1.0 used an old third-party RNNoise LADSPA build. That plugin
+could abort PipeWire during stream activation on current Fedora systems. The
+WebRTC processor used now ships with PipeWire and avoids that in-process legacy
+plugin dependency.

@@ -62,11 +62,8 @@ sudo dnf -y install \
     curl \
     git
 
-info "Installing the RNNoise LADSPA plugin"
-sudo dnf -y copr enable lkiesow/noise-suppression-for-voice
-sudo dnf -y install ladspa-realtime-noise-suppression-plugin
-[[ -f /usr/lib64/ladspa/librnnoise_ladspa.so ]] || \
-    fail "RNNoise was installed, but its expected LADSPA library was not found."
+[[ -f /usr/lib64/spa-0.2/aec/libspa-aec-webrtc.so ]] || \
+    fail "PipeWire's WebRTC audio processor is unavailable."
 
 info "Downloading and verifying LSP Plugins ${LSP_VERSION}"
 temp_dir="$(mktemp -d)"
@@ -102,25 +99,34 @@ if ! pw-config -n pipewire.conf merge context.modules >/dev/null; then
     fail "PipeWire rejected the merged configuration."
 fi
 
-info "Restarting PipeWire"
-if ! systemctl --user restart pipewire pipewire-pulse; then
+info "Restarting PipeWire and WirePlumber"
+if ! systemctl --user restart pipewire wireplumber pipewire-pulse; then
     restore_config
-    systemctl --user restart pipewire pipewire-pulse || true
+    systemctl --user restart pipewire wireplumber pipewire-pulse || true
     fail "PipeWire failed to restart; the previous configuration was restored."
 fi
 
 sleep 2
-if ! systemctl --user is-active --quiet pipewire pipewire-pulse; then
+if ! systemctl --user is-active --quiet pipewire wireplumber pipewire-pulse; then
     restore_config
-    systemctl --user restart pipewire pipewire-pulse || true
+    systemctl --user restart pipewire wireplumber pipewire-pulse || true
     fail "PipeWire did not remain active; the previous configuration was restored."
+fi
+
+if ! pw-cli ls Node 2>/dev/null | grep -F 'AT2020 WebRTC Denoised' >/dev/null; then
+    restore_config
+    systemctl --user restart pipewire wireplumber pipewire-pulse || true
+    fail "The WebRTC denoising source was not created; the previous configuration was restored."
 fi
 
 if ! pw-cli ls Node 2>/dev/null | grep -F 'AT2020 Processed' >/dev/null; then
     restore_config
-    systemctl --user restart pipewire pipewire-pulse || true
+    systemctl --user restart pipewire wireplumber pipewire-pulse || true
     fail "The AT2020 Processed source was not created; the previous configuration was restored."
 fi
+
+pactl set-default-source at2020_processed || \
+    fail "The processed source exists, but it could not be selected as the default."
 
 info "Installation complete"
 printf 'Select "AT2020 Processed" as the microphone in your application.\n'
