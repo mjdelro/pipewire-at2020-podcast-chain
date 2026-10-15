@@ -163,10 +163,15 @@ The configuration contains comments next to the important controls. Make small
 changes and record a representative one-minute sample before adjusting again.
 For a different voice or microphone, the most useful controls are:
 
-- `warmth` gain at 125 Hz
+- `warmth` gain at 150 Hz
 - the 250 Hz mud cut
 - compressor threshold and makeup gain
 - de-esser threshold and 8 kHz detector gain
+
+The default profile was calibrated against a spoken AT2020 sample. It retains
+more 120-300 Hz chest tone, softens the microphone's upper presence and air,
+and uses +11 dB compressor makeup for a fuller live podcast level while the
+-1.5 dB limiter catches isolated peaks.
 
 After any edit, validate and reload:
 
