@@ -1,9 +1,9 @@
-# PipeWire AT2020 Podcast Chain
+# PipeWire AT2020 podcast chain
 
 A real-time mono microphone processing chain for PipeWire, tuned for an
 Audio-Technica AT2020 and a deep, controlled podcast sound.
 
-The virtual source is named **AT2020 Processed** and runs at 48 kHz. The chain
+The virtual source is named `AT2020 Processed` and runs at 48 kHz. The chain
 contains:
 
 1. PipeWire WebRTC noise suppression
@@ -143,7 +143,7 @@ Confirm that the virtual microphone exists:
 pw-cli ls Node | grep -A8 -B2 'AT2020 Processed'
 ```
 
-Select **AT2020 Processed** as the microphone in the recording, conferencing,
+Select `AT2020 Processed` as the microphone in the recording, conferencing,
 or streaming application. Keep the physical AT2020 input selected as the
 capture source in the system audio routing.
 
