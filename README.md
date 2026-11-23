@@ -1,4 +1,18 @@
-# PipeWire AT2020 podcast chain
+<p align="center">
+  <img src="assets/icon.svg" alt="PipeWire AT2020 Podcast Chain Icon" width="104" height="104" />
+</p>
+
+<h1 align="center">PipeWire AT2020 Podcast Chain</h1>
+
+<p align="center">Real-time mono PipeWire microphone processing chain tuned for the Audio-Technica AT2020.</p>
+
+<p align="center">
+  <a href="https://github.com/mjdelro/pipewire-at2020-podcast-chain/releases/latest"><img src="https://img.shields.io/github/v/release/mjdelro/pipewire-at2020-podcast-chain?style=flat-square&color=f59e0b" alt="" /></a>
+  <img src="https://img.shields.io/badge/PipeWire-Audio%20DSP-2b6cb0?style=flat-square&logo=linux&logoColor=white" alt="" />
+  <img src="https://img.shields.io/badge/Shell-Installer-4EAA25?style=flat-square&logo=gnubash&logoColor=white" alt="" />
+</p>
+
+---
 
 A real-time mono microphone processing chain for PipeWire, tuned for an
 Audio-Technica AT2020 and a deep, controlled podcast sound.
