@@ -7,59 +7,28 @@
 <p align="center">Real-time mono PipeWire microphone processing chain tuned for the Audio-Technica AT2020.</p>
 
 <p align="center">
-  <a href="https://github.com/mjdelro/pipewire-at2020-podcast-chain/releases/latest"><img src="https://img.shields.io/github/v/release/mjdelro/pipewire-at2020-podcast-chain?style=flat-square&color=f59e0b" alt="" /></a>
-  <img src="https://img.shields.io/badge/PipeWire-Audio%20DSP-2b6cb0?style=flat-square&logo=linux&logoColor=white" alt="" />
-  <img src="https://img.shields.io/badge/Shell-Installer-4EAA25?style=flat-square&logo=gnubash&logoColor=white" alt="" />
+  <a href="https://github.com/mjdelro/pipewire-at2020-podcast-chain/releases/latest"><img src="https://img.shields.io/github/v/release/mjdelro/pipewire-at2020-podcast-chain?style=flat-square&color=f59e0b" alt="Latest Release" /></a>
+  <img src="https://img.shields.io/badge/PipeWire-Audio%20DSP-2b6cb0?style=flat-square&logo=linux&logoColor=white" alt="PipeWire Audio DSP" />
+  <img src="https://img.shields.io/badge/Shell-Installer-4EAA25?style=flat-square&logo=gnubash&logoColor=white" alt="Shell Installer" />
 </p>
 
 ---
 
-A real-time mono microphone processing chain for PipeWire, tuned for an
-Audio-Technica AT2020 and a deep, controlled podcast sound.
+Creates a virtual 48 kHz mono microphone named **`AT2020 Processed`** in PipeWire, tuned for a warm, controlled podcast voice on the Audio-Technica AT2020 USB.
 
-The virtual source is named `AT2020 Processed` and runs at 48 kHz. The chain
-contains:
+## Signal Chain
 
-1. PipeWire WebRTC noise suppression
-2. Gentle downward expansion
-3. 65 Hz high-pass filtering
-4. Vocal EQ for warmth, mud control, presence, and air
-5. Voice compression
-6. Split-band de-essing centered around 8 kHz
-7. A -1.5 dB peak limiter
+| Stage | Processor | Purpose |
+| :--- | :--- | :--- |
+| **1. Denoise** | PipeWire WebRTC AEC | Removes steady background noise (AGC and high-pass disabled) |
+| **2. Gate** | LSP Gate Mono (`1.2.35`) | Gentle downward expansion (-52 dB threshold, -10 dB reduction) |
+| **3. High-pass** | PipeWire biquad (`65 Hz`) | Cuts desk rumble and plosives while keeping chest tone |
+| **4. Vocal EQ** | PipeWire biquads | +2.5 dB warmth (`150 Hz`), -1.25 dB mud cuts (`250` & `500 Hz`), +1.0 dB presence (`3 kHz`), +0.25 dB air (`10.5 kHz`) |
+| **5. Compressor** | LSP Compressor Mono (`1.2.35`) | 3.5:1 ratio, -24 dB threshold, +11 dB makeup gain |
+| **6. De-esser** | LSP De-esser Mono (`1.2.35`) | Split-band above `4 kHz`, focused at `8 kHz` (3:1 reduction) |
+| **7. Limiter** | LSP Limiter Mono (`1.2.35`) | Catches isolated peaks at a `-1.5 dB` ceiling |
 
-## Requirements
-
-The included paths and commands target Fedora x86_64. Other distributions can
-use the same graph, but may need to change the LADSPA library paths in
-`99-input-denoising.conf`.
-
-- PipeWire and WirePlumber
-- PipeWire utilities (`pw-config`, `pw-cli`)
-- PipeWire's bundled WebRTC audio processor
-- LSP LADSPA plugins
-- LSP Plugins 1.2.35 for the gate, compressor, de-esser, and limiter
-
-## Installation on Fedora
-
-### Automated installation
-
-Download the latest release bundle from the
-[Releases page](https://github.com/mjdelro/pipewire-at2020-podcast-chain/releases),
-extract it, and run:
-
-```bash
-chmod +x install.sh
-./install.sh
-```
-
-The installer supports Fedora x86_64. It installs the required packages,
-verifies the downloaded LSP archive against its SHA-256 release digest, backs
-up an existing configuration, validates the merged PipeWire graph, activates
-the virtual source, and automatically restores the previous configuration if
-validation or activation fails.
-
-To install from a Git checkout instead:
+## Quick Install (Fedora x86_64)
 
 ```bash
 git clone https://github.com/mjdelro/pipewire-at2020-podcast-chain.git
@@ -67,164 +36,78 @@ cd pipewire-at2020-podcast-chain
 ./install.sh
 ```
 
-The remaining sections describe the same process manually.
+Or download and extract the latest archive from [Releases](https://github.com/mjdelro/pipewire-at2020-podcast-chain/releases) and run `./install.sh`.
 
-### 1. Install PipeWire tools and packaged plugins
+**What the installer does:**
+- Installs PipeWire, WirePlumber, and LADSPA dependencies via `dnf`
+- Downloads and SHA-256 verifies LSP Plugins `1.2.35` to `/usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so`
+- Backs up any existing `99-input-denoising.conf`, installs the new config, and validates the PipeWire graph (automatically rolls back if anything fails)
+- Restarts PipeWire, selects **`AT2020 Processed`** as the default microphone (`100%`), and sets the physical `AT2020 USB` hardware gain to **`67%`**
 
-```bash
-sudo dnf install \
-  dnf-plugins-core \
-  pipewire \
-  pipewire-utils \
-  wireplumber \
-  lsp-plugins-ladspa \
-  7zip \
-  curl \
-  git
-```
+## Mic Placement & Gain
 
-Confirm that PipeWire's WebRTC processor is available:
+- Speak **10–15 cm (4–6 in)** from the mic through a pop filter, slightly off-axis to tame plosives and sibilance.
+- Keep the physical `AT2020 USB` input at **67%** and `AT2020 Processed` at **100%**.
+- Select **`AT2020 Processed`** as your microphone in Discord, OBS, browsers, or recording apps.
+- If you hit the `-1.5 dB` limiter frequently, lower the physical AT2020 input gain slightly.
 
-```bash
-test -f /usr/lib64/spa-0.2/aec/libspa-aec-webrtc.so
-```
+## Tweaking the Sound
 
-### 2. Install the LSP 1.2.35 processing stack
+Edit `~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf` (all key settings are commented inline). The most useful knobs for a different voice or room:
 
-The Fedora LSP package may not yet contain `deesser_mono`. The configuration
-pins every LSP processor to the same 1.2.35 build so plugin behavior stays
-consistent. Install the official LADSPA binary alongside the packaged library:
+- **Warmth / body:** `warmth` gain at `150 Hz` and `eq250` cut at `250 Hz`
+- **Loudness / punch:** `compressor` threshold and makeup gain
+- **Sibilance ("s" sounds):** `deesser` threshold and `8 kHz` peak detector gain
 
-```bash
-work_dir=$(mktemp -d)
-curl -fL \
-  -o "$work_dir/lsp-plugins-1.2.35-Linux-x86_64.7z" \
-  https://github.com/lsp-plugins/lsp-plugins/releases/download/1.2.35/lsp-plugins-1.2.35-Linux-x86_64.7z
-7z x "$work_dir/lsp-plugins-1.2.35-Linux-x86_64.7z" -o"$work_dir"
-sudo install -Dm755 \
-  "$work_dir/lsp-plugins-1.2.35-Linux-x86_64/LADSPA/lsp-plugins-ladspa.so" \
-  /usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so
-```
-
-Confirm that the installed library exposes the complete mono processing stack:
-
-```bash
-for plugin in gate_mono compressor_mono deesser_mono limiter_mono; do
-  analyseplugin /usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so \
-    | grep -F "plugins/ladspa/$plugin"
-done
-```
-
-### 3. Install the PipeWire configuration
-
-Clone this repository and enter it:
-
-```bash
-git clone https://github.com/mjdelro/pipewire-at2020-podcast-chain.git
-cd pipewire-at2020-podcast-chain
-```
-
-Create the PipeWire override directory and back up an existing configuration:
-
-```bash
-mkdir -p ~/.config/pipewire/pipewire.conf.d
-if test -f ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf; then
-  cp ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf \
-    ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf.backup
-fi
-install -m644 99-input-denoising.conf \
-  ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf
-```
-
-### 4. Validate and activate
-
-Validate the merged PipeWire module configuration before restarting audio:
-
-```bash
-pw-config -n pipewire.conf merge context.modules >/dev/null
-```
-
-Restart PipeWire and WirePlumber, then confirm that all services return:
-
-```bash
-systemctl --user restart pipewire wireplumber pipewire-pulse
-systemctl --user is-active pipewire wireplumber pipewire-pulse
-```
-
-Confirm that the virtual microphone exists:
-
-```bash
-pw-cli ls Node | grep -A8 -B2 'AT2020 Processed'
-```
-
-Select `AT2020 Processed` as the microphone in the recording, conferencing,
-or streaming application. Keep the physical AT2020 input selected as the
-capture source in the system audio routing.
-
-## Signal level and placement
-
-- Speak about 10-15 cm (4-6 in) from the microphone through a pop filter.
-- Aim slightly off-axis to reduce plosives and sibilance.
-- Set the physical AT2020 USB hardware input volume to **67%** (configured automatically by `install.sh` when connected) and keep `AT2020 Processed` at **100%** so normal speech is healthy without clipping.
-- WebRTC automatic gain control and high-pass filtering are disabled because
-  those duties are handled by the downstream mastering chain.
-- The limiter ceiling is -1.5 dB; frequent contact with that ceiling means the
-  physical microphone gain is probably too high.
-
-## Customization
-
-The configuration contains comments next to the important controls. Make small
-changes and record a representative one-minute sample before adjusting again.
-For a different voice or microphone, the most useful controls are:
-
-- `warmth` gain at 150 Hz
-- the 250 Hz mud cut
-- compressor threshold and makeup gain
-- de-esser threshold and 8 kHz detector gain
-
-The default profile was calibrated against a spoken AT2020 sample. It retains
-more 120-300 Hz chest tone, softens the microphone's upper presence and air,
-and uses +11 dB compressor makeup for a fuller live podcast level while the
--1.5 dB limiter catches isolated peaks.
-
-After any edit, validate and reload:
+Validate and reload after any edit:
 
 ```bash
 pw-config -n pipewire.conf merge context.modules >/dev/null && \
   systemctl --user restart pipewire wireplumber pipewire-pulse
 ```
 
-Check for graph or plugin errors:
+Check logs if something sounds off:
 
 ```bash
 journalctl --user -u pipewire --since '5 minutes ago' --no-pager
 ```
 
-## Removal and rollback
+<details>
+<summary><strong>Manual installation steps</strong> (if you prefer not to run <code>install.sh</code>)</summary>
 
-Remove only this override, then restart PipeWire:
+1. **Install Fedora dependencies:**
+   ```bash
+   sudo dnf install dnf-plugins-core pipewire pipewire-utils wireplumber lsp-plugins-ladspa 7zip curl git
+   ```
+
+2. **Install LSP Plugins `1.2.35`:**
+   ```bash
+   work_dir=$(mktemp -d)
+   curl -fL -o "$work_dir/lsp-plugins-1.2.35-Linux-x86_64.7z" \
+     https://github.com/lsp-plugins/lsp-plugins/releases/download/1.2.35/lsp-plugins-1.2.35-Linux-x86_64.7z
+   7z x "$work_dir/lsp-plugins-1.2.35-Linux-x86_64.7z" -o"$work_dir"
+   sudo install -Dm755 \
+     "$work_dir/lsp-plugins-1.2.35-Linux-x86_64/LADSPA/lsp-plugins-ladspa.so" \
+     /usr/local/lib64/ladspa/lsp-plugins-ladspa-1.2.35.so
+   ```
+
+3. **Install the config and restart PipeWire:**
+   ```bash
+   mkdir -p ~/.config/pipewire/pipewire.conf.d
+   install -m644 99-input-denoising.conf ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf
+   pw-config -n pipewire.conf merge context.modules >/dev/null
+   systemctl --user restart pipewire wireplumber pipewire-pulse
+   pactl set-default-source at2020_processed
+   pactl set-source-volume alsa_input.usb-audio-technica____AT2020_USB-00.analog-stereo 67%
+   ```
+
+</details>
+
+## Uninstall
 
 ```bash
 rm ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf
 systemctl --user restart pipewire wireplumber pipewire-pulse
 ```
 
-If a backup was created during installation, restore it instead:
-
-```bash
-mv ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf.backup \
-  ~/.config/pipewire/pipewire.conf.d/99-input-denoising.conf
-systemctl --user restart pipewire wireplumber pipewire-pulse
-```
-
-## Notes
-
-This is a real-time voice chain, not a replacement for final loudness
-normalization during podcast mastering. Recording applications that duplicate a
-mono source into stereo can also report approximately 3 LU more loudness than a
-true mono export.
-
-Versions before 1.1.0 used an old third-party RNNoise LADSPA build. That plugin
-could abort PipeWire during stream activation on current Fedora systems. The
-WebRTC processor used now ships with PipeWire and avoids that in-process legacy
-plugin dependency.
+*(If `install.sh` created a `.backup.<timestamp>` file in that directory, rename it back to `99-input-denoising.conf` before restarting PipeWire.)*
