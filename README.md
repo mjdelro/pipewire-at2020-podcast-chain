@@ -165,7 +165,7 @@ capture source in the system audio routing.
 
 - Speak about 10-15 cm (4-6 in) from the microphone through a pop filter.
 - Aim slightly off-axis to reduce plosives and sibilance.
-- Set the hardware input so normal speech is healthy but never clips.
+- Set the physical AT2020 USB hardware input volume to **67%** (configured automatically by `install.sh` when connected) and keep `AT2020 Processed` at **100%** so normal speech is healthy without clipping.
 - WebRTC automatic gain control and high-pass filtering are disabled because
   those duties are handled by the downstream mastering chain.
 - The limiter ceiling is -1.5 dB; frequent contact with that ceiling means the

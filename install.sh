@@ -7,6 +7,8 @@ readonly LSP_ARCHIVE="lsp-plugins-${LSP_VERSION}-Linux-x86_64.7z"
 readonly LSP_URL="https://github.com/lsp-plugins/lsp-plugins/releases/download/${LSP_VERSION}/${LSP_ARCHIVE}"
 readonly LSP_SHA256="4ef3b2f63b29a522fdaf3a18f879c1c85c82f0bdd1e0b3c849a5f3c4b08d2550"
 readonly LSP_TARGET="/usr/local/lib64/ladspa/lsp-plugins-ladspa-${LSP_VERSION}.so"
+readonly AT2020_SOURCE="alsa_input.usb-audio-technica____AT2020_USB-00.analog-stereo"
+readonly AT2020_INPUT_VOLUME="67%"
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly SOURCE_CONFIG="${SCRIPT_DIR}/99-input-denoising.conf"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/pipewire/pipewire.conf.d"
@@ -127,6 +129,14 @@ fi
 
 pactl set-default-source at2020_processed || \
     fail "The processed source exists, but it could not be selected as the default."
+pactl set-source-volume at2020_processed 100% || true
+
+if pactl list short sources 2>/dev/null | awk '{print $2}' | grep -Fx "${AT2020_SOURCE}" >/dev/null; then
+    pactl set-source-volume "${AT2020_SOURCE}" "${AT2020_INPUT_VOLUME}" || \
+        printf 'Warning: could not set %s volume to %s.\n' "${AT2020_SOURCE}" "${AT2020_INPUT_VOLUME}" >&2
+else
+    printf 'Note: physical AT2020 USB source not detected; set its input volume to %s once connected.\n' "${AT2020_INPUT_VOLUME}"
+fi
 
 info "Installation complete"
 printf 'Select "AT2020 Processed" as the microphone in your application.\n'
